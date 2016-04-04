@@ -112,8 +112,8 @@ def EndCheck(i, j, Side):
 
 
 def BestMove():
-    global FirstAnalyze, Lem, Rim, Upm, Lom, Self, Depth, Position, AnalyzeNumber, FirstVisit, AcMaxDepth, OpponentWin, FastWin, WinDepth, WinDepth1
-    SWinDepth, OWinDepth = 50, 0
+    global FirstAnalyze, Lem, Rim, Upm, Lom, Self, Depth, Position, AnalyzeNumber, FirstVisit, AcMaxDepth, OpponentWin, FastWin
+    SWinDepth, OWinDepth, SWinDepth= 50, 0, 30
     FastWin = [-2, -2]
     OpponentWin = [-2, -2]
     AcAnalyzeNumber = FirstAnalyze 
@@ -165,14 +165,14 @@ def BestMove():
         Position[BestPoints[i][0]][BestPoints[i][1]] = Self
         RemUpm, RemLom, RemLem, RemRim = Upm, Lom, Lem, Rim
         ChangeRange(BestPoints[i][0],BestPoints[i][1])
-	FirstVisit, WinDepth, WinDepth1 = 1, 0, 0
-        b = OpponentBest(Alpha, +30001)
+	FirstVisit= 1
+        b, CWinDepth, CLoseDepth = OpponentBest(Alpha, +30001)
 	if b == 29000:
-	    if SWinDepth > WinDepth:
-		SWinDepth, FastWin[0], FastWin[1] = WinDepth, BestPoints[i][0], BestPoints[i][1]
+	    if SWinDepth > CWinDepth:
+		SWinDepth, FastWin[0], FastWin[1] = CWinDepth, BestPoints[i][0], BestPoints[i][1]
 	if b == -29000:
-            if OWinDepth < WinDepth1:
-		OWinDepth, OpponentWin[0], OpponentWin[1] = WinDepth1, BestPoints[i][0], BestPoints[i][1]
+            if OWinDepth < CLoseDepth:
+		OWinDepth, OpponentWin[0], OpponentWin[1] = CLoseDepth, BestPoints[i][0], BestPoints[i][1]
         Upm, Lom, Lem, Rim = RemUpm, RemLom, RemLem, RemRim
         Position[BestPoints[i][0]][BestPoints[i][1]] = 0
 	if v < b:
@@ -186,17 +186,17 @@ def BestMove():
 	for i in range(AcAnalyzeNumber, 20):
 	    if BestPoints[i][2] <= 0:
 		break
-	    FirstVisit, WinDepth, WinDepth1 = 1, 0, 0
+	    FirstVisit= 1
             Position[BestPoints[i][0]][BestPoints[i][1]] = Self
             RemUpm, RemLom, RemLem, RemRim = Upm, Lom, Lem, Rim
             ChangeRange(BestPoints[i][0],BestPoints[i][1])
-            b = OpponentBest(Alpha, +30001)
+            b, CWinDepth, CLoseDepth = OpponentBest(Alpha, +30001)
 	    if b == 29000:
-	        if SWinDepth > WinDepth:
-		    SWinDepth, FastWin[0], FastWin[1] = WinDepth, BestPoints[i][0], BestPoints[i][1]
+	        if SWinDepth > CWinDepth:
+		    SWinDepth, FastWin[0], FastWin[1] = CWinDepth, BestPoints[i][0], BestPoints[i][1]
 	    if b == -29000:
-		if OWinDepth < WinDepth1:
-		    OWinDepth, OpponentWin[0], OpponentWin[1] = WinDepth1, BestPoints[i][0], BestPoints[i][1]
+		if OWinDepth < CLoseDepth:
+		    OWinDepth, OpponentWin[0], OpponentWin[1] = CLoseDepth, BestPoints[i][0], BestPoints[i][1]
             Upm, Lom, Lem, Rim = RemUpm, RemLom, RemLem, RemRim
             Position[BestPoints[i][0]][BestPoints[i][1]] = 0
 	    if b > -29000:
@@ -204,6 +204,7 @@ def BestMove():
 		return BestPoints[i][0], BestPoints[i][1]  
     print v
     if v == -29000:
+	print OpponentWin[0], OpponentWin[1], OWinDepth
 	return OpponentWin[0], OpponentWin[1]
     if v == 29000:
 	print FastWin[0], FastWin[1], SWinDepth
@@ -211,7 +212,7 @@ def BestMove():
     return Hori, Vert 
 
 def SelfBest(Alpha, Beta):
-    global Lem, Rim, Upm, Lom, Self, MaxDepth, Depth, Position, AnalyzeNumber, FirstVisit, AcMaxDepth, WinDepth
+    global Lem, Rim, Upm, Lom, Self, MaxDepth, Depth, Position, AnalyzeNumber, FirstVisit, AcMaxDepth
     AcAnalyzeNumber = AnalyzeNumber
     Depth += 1
     Number = 0
@@ -223,8 +224,8 @@ def SelfBest(Alpha, Beta):
     if Depth >= AcMaxDepth:
         #FirstVisit = 0
 	Depth -= 1
-        return Eval()
-    v = -30000
+        return Eval(), 30, 30
+    v, WinDepth, LoseDepth = -30000, 30, 0
     #if FirstVisit == 1:
     for i in range(max(1, Lem-2),min(16, Rim+3)):
 	for j in range(max(1, Upm-2),min(16, Lom+3)):
@@ -259,29 +260,30 @@ def SelfBest(Alpha, Beta):
         if BestPoints[i][3] == 1:
 	    if AcAnalyzeNumber == 1:
 		AcMaxDepth -= 1
-	    if WinDepth < Depth:
-		WinDepth = Depth
 	    Depth -= 1
-	    return 29000
+	    return 29000, Depth+1, 30
         Position[BestPoints[i][0]][BestPoints[i][1]] = Self 
     	RemUpm, RemLom, RemLem, RemRim = Upm, Lom, Lem, Rim
     	ChangeRange(BestPoints[i][0], BestPoints[i][1])
-    	v = max(v, OpponentBest(Alpha, Beta))
+	Cvalue, CWinDepth, CLoseDepth = OpponentBest(Alpha, Beta)
+    	v = max(v, Cvalue)
+	WinDepth = min(WinDepth,CWinDepth) 
+	LoseDepth = max(LoseDepth,CLoseDepth) 
     	Upm, Lom, Lem, Rim = RemUpm, RemLom, RemLem, RemRim
     	Position[BestPoints[i][0]][BestPoints[i][1]] = 0
-    	if v > Beta:
+    	if v >= Beta:
 	    if AcAnalyzeNumber == 1:
 		AcMaxDepth -= 1
             Depth -= 1
-    	    return v
+    	    return v, WinDepth, LoseDepth
     	Alpha = max(Alpha, v)
     if AcAnalyzeNumber == 1:
         AcMaxDepth -= 1
     Depth -= 1
-    return v
+    return v, WinDepth, LoseDepth
 
 def OpponentBest(Alpha, Beta):
-    global Lem, Rim, Upm, Lom, Opponent, MaxDepth, Depth, Position, AnalyzeNumber, FirstVisit, AcMaxDepth, OpponentWin, WinDepth1, OWinDepth, OpponentFirstAnalyze
+    global Lem, Rim, Upm, Lom, Opponent, MaxDepth, Depth, Position, AnalyzeNumber, FirstVisit, AcMaxDepth, OpponentFirstAnalyze
     AcAnalyzeNumber = AnalyzeNumber
     Doit = 0
     if FirstVisit == 1:
@@ -296,8 +298,8 @@ def OpponentBest(Alpha, Beta):
     if Depth >= AcMaxDepth:
         #FirstVisit = 1
         Depth -=1
-        return Eval()
-    v = 30000
+        return Eval(), 30, 30
+    v, WinDepth, LoseDepth = 30000, 0, 30
     #if FirstVisit == 1:
     for i in range(max(1, Lem-2),min(16, Rim+3)):
 	for j in range(max(1, Upm-2),min(16, Lom+3)):
@@ -334,21 +336,22 @@ def OpponentBest(Alpha, Beta):
 	if BestPoints[i][3] == 1:
 	    if AcAnalyzeNumber == 1:
 		AcMaxDepth -= 1
-	    if WinDepth1 < Depth:
-		WinDepth1 = Depth
             Depth -= 1
-	    return -29000	
+	    return -29000, 30, Depth+1	
         Position[BestPoints[i][0]][BestPoints[i][1]] = Opponent 
     	RemUpm, RemLom, RemLem, RemRim = Upm, Lom, Lem, Rim
     	ChangeRange(BestPoints[i][0], BestPoints[i][1])
-    	v = min(v, SelfBest(Alpha, Beta))
+    	Cvalue, CWinDepth, CLoseDepth = SelfBest(Alpha, Beta)
+	v = min(v, Cvalue)
+	WinDepth = max(WinDepth, CWinDepth)
+	LoseDepth = min(LoseDepth, CLoseDepth)
     	Upm, Lom, Lem, Rim = RemUpm, RemLom, RemLem, RemRim
     	Position[BestPoints[i][0]][BestPoints[i][1]] = 0
-    	if v < Alpha:
+    	if v <= Alpha:
 	    if AcAnalyzeNumber == 1:
 		AcMaxDepth -= 1
   	    Depth -= 1
-    	    return v
+    	    return v, WinDepth, LoseDepth
     	Beta = min(Beta, v)
     if v == 29000 and Doit == 1:
 	for i in range(AcAnalyzeNumber, 20):
@@ -359,25 +362,26 @@ def OpponentBest(Alpha, Beta):
 	    if BestPoints[i][3] == 1:
 	        if AcAnalyzeNumber == 1:
 		    AcMaxDepth -= 1
-		if WinDepth1 < Depth:
-		    WinDepth1 = Depth
                 Depth -= 1
-	        return -29000	
+	        return -29000, 30, Depth+1	
             Position[BestPoints[i][0]][BestPoints[i][1]] = Opponent 
     	    RemUpm, RemLom, RemLem, RemRim = Upm, Lom, Lem, Rim
     	    ChangeRange(BestPoints[i][0], BestPoints[i][1])
-    	    v = min(v, SelfBest(Alpha, Beta))
+    	    Cvalue, CWinDepth = SelfBest(Alpha, Beta)
+    	    v = min(v, Cvalue)
+	    WinDepth = max(WinDepth, CWinDepth)
+	    LoseDepth = min(LoseDepth, CLoseDepth)
     	    Upm, Lom, Lem, Rim = RemUpm, RemLom, RemLem, RemRim
     	    Position[BestPoints[i][0]][BestPoints[i][1]] = 0
             if v < 29000:
 	        if AcAnalyzeNumber == 1:
 		    AcMaxDepth -= 1
     	        Depth -= 1
-                return v
+                return v, 30, 30
     if AcAnalyzeNumber == 1:
 	AcMaxDepth -= 1
     Depth -= 1
-    return v
+    return v, WinDepth, LoseDepth
 
 def Evalp(i, j, Self):
     Value = 0
@@ -1199,7 +1203,7 @@ def Eval():
     
     
 
-Depth, MaxDepth, FirstVisit, BlackFirstMove, FirstAnalyze, OpponentFirstAnalyze = 0, 8, 1, 1, 9, 6
+Depth, MaxDepth, FirstVisit, BlackFirstMove, FirstAnalyze, OpponentFirstAnalyze = 0, 6, 1, 1, 9, 9
 AnalyzeNumber = 3
 Position = [[0] * 17 for i in range(17)]
 Upm, Lom, Lem, Rim = 17, -2, 17, -2

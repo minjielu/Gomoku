@@ -12,19 +12,23 @@ def Price(OValue):
         2: 5,
         3: 11,
         4: 23,
-        5: 1000,
-        6: 1000,
+        5: 1500,
+        6: 1500,
+	7: 1500,
+	8: 1500,
         }[OValue]
 
 def DPrice(OValue):
     return {
 	0: 0,
-	1: 1,
-	2: 4,
-	3: 20,
-	4: 900,
-	5: 950,
+	1: 3,
+	2: 6,
+	3: 10,
+	4: 1400,
+	5: 1450,
         6: 950,
+	7: 950,
+	8: 950
 	}[OValue]
 
 
@@ -33,21 +37,25 @@ def Bonus(OValue):
 	0: 0,
 	1: 0,
 	2: 2,
-	3: 4,
+	3: 20,
 	4: 800,
-	5: 16,
-        6: 100,
+	5: 800,
+        6: 800,
+	7: 800,
+	8: 800,
 	}[OValue]
 
 def DBonus(OValue):
     return {
 	0: 0,
 	1: 0,
-	2: 2,
+	2: 3,
 	3: 700,
-	4: 8,
-	5: 16,
-        6: 20,
+	4: 700,
+	5: 700,
+        6: 700,
+	7: 700,
+	8: 700,
 	}[OValue]
         
 def ChangeRange(NewHori, NewVert):
@@ -104,18 +112,20 @@ def EndCheck(i, j, Side):
 
 
 def BestMove():
-    global FirstAnalyze, Lem, Rim, Upm, Lom, Self, Depth, Position, AnalyzeNumber, FirstVisit, AcMaxDepth
-    AcFirstAnalyze = FirstAnalyze
+    global FirstAnalyze, Lem, Rim, Upm, Lom, Self, Depth, Position, AnalyzeNumber, FirstVisit, AcMaxDepth, OpponentWin, FastWin, WinDepth
+    SWinDepth = 50
+    FastWin = [-2, -2]
+    OpponentWin = [-2, -2]
+    AcAnalyzeNumber = FirstAnalyze 
     AcMaxDepth = MaxDepth
-    v = -10000
+    v = -30000
     Hori, Vert = -1, -1
     Depth = 0
     Number = 0
-    BestPoints = [[0] * 4 for i in range(225)]
+    BestPoints = [[-2] * 4 for i in range(225)]
     #Measure = -10000
-    FirstVisit = 1
     #BestPoint = []
-    Alpha = -10000
+    Alpha = -30001
     for i in range(max(1, Lem-2),min(16, Rim+3)):
 	for j in range(max(1, Upm-2),min(16, Lom+3)):
 	    if Position[i][j] != 1 and Position[i][j] != 2:
@@ -124,8 +134,8 @@ def BestMove():
 		BestPoints[Number][2], BestPoints[Number][3] = Evalp(i, j,  Self)
 		Number += 1
     BestPoints = sorted(BestPoints, key=lambda x:x[2], reverse = True)
-    if BestPoints[0][2] >= 900:
-        AcFirstAnalyze = 1
+    if BestPoints[0][2] >= 1400:
+        AcAnalyzeNumber = 1
         AcMaxDepth += 1
     #Position[BestPoint[0]][BestPoint[1]] = Self
     #RemUpm, RemLom, RemLem, RemRim = Upm, Lom, Lem, Rim
@@ -147,7 +157,7 @@ def BestMove():
 			#BestPoints.sort()
 		        #if temv >= 1000:
 			    #return i, j
-    for i in range(AcFirstAnalyze):
+    for i in range(AcAnalyzeNumber):
 	if BestPoints[i][0] == -2:
 	    break
 	if BestPoints[i][3] == 1:
@@ -155,22 +165,47 @@ def BestMove():
         Position[BestPoints[i][0]][BestPoints[i][1]] = Self
         RemUpm, RemLom, RemLem, RemRim = Upm, Lom, Lem, Rim
         ChangeRange(BestPoints[i][0],BestPoints[i][1])
-        b = OpponentBest(Alpha, +10000)
+	FirstVisit, WinDepth = 1, 0
+        b = OpponentBest(Alpha, +30001)
+	if b == 29000:
+	    if SWinDepth > WinDepth:
+		SWinDepth, FastWin[0], FastWin[1] = WinDepth, BestPoints[i][0], BestPoints[i][1]
         Upm, Lom, Lem, Rim = RemUpm, RemLom, RemLem, RemRim
         Position[BestPoints[i][0]][BestPoints[i][1]] = 0
-        if v < b:
+	if v < b:
             v, Alpha = b, b
             Hori, Vert = BestPoints[i][0], BestPoints[i][1]
         elif v == b:
 	    probe = random.random()
 	    if probe < 0.4:
-	        v = b
 	        Hori, Vert = BestPoints[i][0], BestPoints[i][1]
+    if v == -29000:
+	for i in range(AcAnalyzeNumber, 20):
+	    if BestPoints[i][2] <= 0:
+		break
+	    FirstVisit, WinDepth = 1, 0
+            Position[BestPoints[i][0]][BestPoints[i][1]] = Self
+            RemUpm, RemLom, RemLem, RemRim = Upm, Lom, Lem, Rim
+            ChangeRange(BestPoints[i][0],BestPoints[i][1])
+            b = OpponentBest(Alpha, +30001)
+	    if b == 29000:
+	        if SWinDepth > WinDepth:
+		    SWinDepth, FastWin[0], FastWin[1] = WinDepth, BestPoints[i][0], BestPoints[i][1]
+            Upm, Lom, Lem, Rim = RemUpm, RemLom, RemLem, RemRim
+            Position[BestPoints[i][0]][BestPoints[i][1]] = 0
+	    if b > -29000:
+		print b
+		return BestPoints[i][0], BestPoints[i][1]  
     print v
+    if v == -29000:
+	return OpponentWin[0], OpponentWin[1]
+    if v == 29000:
+	print FastWin[0], FastWin[1], SWinDepth
+	return FastWin[0], FastWin[1]
     return Hori, Vert 
 
 def SelfBest(Alpha, Beta):
-    global Lem, Rim, Upm, Lom, Self, MaxDepth, Depth, Position, AnalyzeNumber, FirstVisit, AcMaxDepth
+    global Lem, Rim, Upm, Lom, Self, MaxDepth, Depth, Position, AnalyzeNumber, FirstVisit, AcMaxDepth, WinDepth
     AcAnalyzeNumber = AnalyzeNumber
     Depth += 1
     Number = 0
@@ -183,7 +218,7 @@ def SelfBest(Alpha, Beta):
         #FirstVisit = 0
 	Depth -= 1
         return Eval()
-    v = -10000
+    v = -30000
     #if FirstVisit == 1:
     for i in range(max(1, Lem-2),min(16, Rim+3)):
 	for j in range(max(1, Upm-2),min(16, Lom+3)):
@@ -193,7 +228,7 @@ def SelfBest(Alpha, Beta):
 		BestPoints[Number][2], BestPoints[Number][3] = Evalp(i, j, Self)
 		Number += 1
     BestPoints = sorted(BestPoints, key=lambda x:x[2], reverse = True)
-    if BestPoints[0][2] >= 900:
+    if BestPoints[0][2] >= 1400:
 	AcMaxDepth += 1
 	AcAnalyzeNumber = 1
         #Position[BestPoint[0]][BestPoint[1]] = Self
@@ -218,15 +253,17 @@ def SelfBest(Alpha, Beta):
         if BestPoints[i][3] == 1:
 	    if AcAnalyzeNumber == 1:
 		AcMaxDepth -= 1
+	    if WinDepth < Depth:
+		WinDepth = Depth
 	    Depth -= 1
-	    return 9000
+	    return 29000
         Position[BestPoints[i][0]][BestPoints[i][1]] = Self 
     	RemUpm, RemLom, RemLem, RemRim = Upm, Lom, Lem, Rim
     	ChangeRange(BestPoints[i][0], BestPoints[i][1])
     	v = max(v, OpponentBest(Alpha, Beta))
     	Upm, Lom, Lem, Rim = RemUpm, RemLom, RemLem, RemRim
     	Position[BestPoints[i][0]][BestPoints[i][1]] = 0
-    	if v >= Beta:
+    	if v > Beta:
 	    if AcAnalyzeNumber == 1:
 		AcMaxDepth -= 1
             Depth -= 1
@@ -238,11 +275,14 @@ def SelfBest(Alpha, Beta):
     return v
 
 def OpponentBest(Alpha, Beta):
-    global Lem, Rim, Upm, Lom, Opponent, MaxDepth, Depth, Position, AnalyzeNumber, FirstVisit, FirstAnalyze, AcMaxDepth
-    OpponentAnalyze = AnalyzeNumber
+    global Lem, Rim, Upm, Lom, Opponent, MaxDepth, Depth, Position, AnalyzeNumber, FirstVisit, AcMaxDepth, OpponentWin, WinDepth1, OWinDepth
+    AcAnalyzeNumber = AnalyzeNumber
+    Doit = 0
+    if FirstVisit == 1:
+	FirstVisit, Doit, OWinDepth = 0, 1, 50
     Depth += 1
     Number = 0
-    BestPoints = [[0] * 4 for i in range(225)]
+    BestPoints = [[-2] * 4 for i in range(225)]
     #BestPoint = []
     #BestPoint.append(0)
     #BestPoint.append(0)
@@ -251,7 +291,7 @@ def OpponentBest(Alpha, Beta):
         #FirstVisit = 1
         Depth -=1
         return Eval()
-    v = 10000
+    v = 30000
     #if FirstVisit == 1:
     for i in range(max(1, Lem-2),min(16, Rim+3)):
 	for j in range(max(1, Upm-2),min(16, Lom+3)):
@@ -261,8 +301,8 @@ def OpponentBest(Alpha, Beta):
 	        BestPoints[Number][2], BestPoints[Number][3] = Evalp(i,j, Opponent)
 		Number += 1
     BestPoints = sorted(BestPoints, key=lambda x:x[2], reverse = True)
-    if BestPoints[0][2] >= 900:
-        OpponentAnalyze = 1
+    if BestPoints[0][2] >= 1400:
+        AcAnalyzeNumber = 1
 	AcMaxDepth += 1
         #Position[BestPoint[0]][BestPoint[1]] = Self
         #RemUpm, RemLom, RemLem, RemRim = Upm, Lom, Lem, Rim
@@ -270,10 +310,7 @@ def OpponentBest(Alpha, Beta):
         #v = OpponentBest(-10000, +10000)
         #Upm, Lom, Lem, Rim = RemUpm, RemLom, RemLem, RemRim
         #Position[BestPoint[0]][BestPoint[1]] = 0
-    if FirstVisit == 1 and OpponentAnalyze != 1:
-        OpponentAnalyze = FirstAnalyze
-        FirstVisit = 0
-    for i in range(OpponentAnalyze):
+    for i in range(AcAnalyzeNumber):
                 #Number += 1
 		#temv = Evalp(i, j, Opponent)
 		#if Number <= AnalyzeNumber:
@@ -289,23 +326,62 @@ def OpponentBest(Alpha, Beta):
 	if BestPoints[i][0] == -2:
 	    break
 	if BestPoints[i][3] == 1:
-	    if OpponentAnalyze == 1:
+	    if AcAnalyzeNumber == 1:
 		AcMaxDepth -= 1
+	    if WinDepth1 < Depth:
+		WinDepth1 = Depth
+	    if Doit == 1:
+		OWinDepth, OpponentWin[0], OpponentWin[1] = 1, BestPoints[i][0], BestPoints[i][1]
             Depth -= 1
-	    return -9000	
+	    return -29000	
         Position[BestPoints[i][0]][BestPoints[i][1]] = Opponent 
     	RemUpm, RemLom, RemLem, RemRim = Upm, Lom, Lem, Rim
     	ChangeRange(BestPoints[i][0], BestPoints[i][1])
+	if Doit == 1:
+	    WinDepth1 = 0
     	v = min(v, SelfBest(Alpha, Beta))
+	if v == -29000 and Doit == 1:
+	    if OWinDepth > WinDepth1:
+	        OWinDepth, OpponentWin[0], OpponentWin[1] = WinDepth1, BestPoints[i][0], BestPoints[i][1]
     	Upm, Lom, Lem, Rim = RemUpm, RemLom, RemLem, RemRim
     	Position[BestPoints[i][0]][BestPoints[i][1]] = 0
-    	if v <= Alpha:
-	    if OpponentAnalyze == 1:
+    	if v < Alpha:
+	    if AcAnalyzeNumber == 1:
 		AcMaxDepth -= 1
   	    Depth -= 1
     	    return v
     	Beta = min(Beta, v)
-    if OpponentAnalyze == 1:
+    if v == 29000 and Doit == 1:
+	for i in range(AcAnalyzeNumber, 20):
+	    if BestPoints[i][0] == -2:
+		break
+	    if BestPoints[i][2] <= 0:
+		break
+	    if BestPoints[i][3] == 1:
+	        if AcAnalyzeNumber == 1:
+		    AcMaxDepth -= 1
+		if WinDepth1 < Depth:
+		    WinDepth1 = Depth
+		if Doit == 1:
+		    OWinDepth, OpponentWin[0], OpponentWin[1] = 1, BestPoints[i][0], BestPoints[i][1]
+                Depth -= 1
+	        return -29000	
+            Position[BestPoints[i][0]][BestPoints[i][1]] = Opponent 
+    	    RemUpm, RemLom, RemLem, RemRim = Upm, Lom, Lem, Rim
+    	    ChangeRange(BestPoints[i][0], BestPoints[i][1])
+	    WinDepth1 = 0
+    	    v = min(v, SelfBest(Alpha, Beta))
+	    if v == -29000 and Doit == 1:
+		if OWinDepth > WinDepth1:
+	            OWinDepth, OpponentWin[0], OpponentWin[1] = WinDepth1, BestPoints[i][0], BestPoints[i][1]
+    	    Upm, Lom, Lem, Rim = RemUpm, RemLom, RemLem, RemRim
+    	    Position[BestPoints[i][0]][BestPoints[i][1]] = 0
+            if v < 29000:
+	        if AcAnalyzeNumber == 1:
+		    AcMaxDepth -= 1
+    	        Depth -= 1
+                return v
+    if AcAnalyzeNumber == 1:
 	AcMaxDepth -= 1
     Depth -= 1
     return v
@@ -385,6 +461,8 @@ def Evalp(i, j, Self):
 	        if Position[i-SUL][j-SUL] == 0 and Position[i+SLR][j+SLR] == 0:
 	            Up1 = Bonus(SUL+SLR+FirstNone1+FirstNone2-3)
             Value = Value + Price(SUL+SLR+FirstNone1+FirstNone2-3) + Up1
+	    if FirstNone1 == 1 and FirstNone2 == 1:
+		Value += 5
 
     FirstNone1 = 1
     for p in range(1, min(6, i+1, 17-j)):
@@ -428,7 +506,7 @@ def Evalp(i, j, Self):
 	OLL = p
 	if Position[i-p][j+p] == Opponent or Position[i-p][j+p] == Opponent-2:
 	    break
-    for q in range(1, min(6, 17-i, i+1)):
+    for q in range(1, min(6, 17-i, j+1)):
 	OUR = q
         if Position[i+q][j-q] == Opponent or Position[i+q][j-q] == Opponent-2:
 	    break
@@ -443,7 +521,7 @@ def Evalp(i, j, Self):
          	Value = Value+Price(SLL+UR-2)+Up2
 	    else:
 		if i+SUR <= 15 and j-SUR >= 1:
-		    if Position[i+SUR][j+SUR] == 0:
+		    if Position[i+SUR][j-SUR] == 0:
 		        Up2 = Bonus(SUR+LL-2)
 	        Value = Value+Price(SUR+LL-2)+Up2
         else:
@@ -451,6 +529,8 @@ def Evalp(i, j, Self):
 	        if Position[i-SLL][j+SLL] == 0 and Position[i+SUR][j-SUR] == 0:
 	            Up2 = Bonus(SLL+SUR+FirstNone1+FirstNone2-3)
             Value = Value + Price(SLL+SUR+FirstNone1+FirstNone2-3) + Up2
+	    if FirstNone1 == 1 and FirstNone2 == 1:
+		Value += 5
 
     FirstNone1 = 1
     for p in range(1, min(6, i+1)):
@@ -517,6 +597,8 @@ def Evalp(i, j, Self):
 	        if Position[i-SL][j] == 0 and Position[i+SR][j] == 0:
 	            Up3 = Bonus(SL+SR+FirstNone1+FirstNone2-3)
             Value = Value + Price(SL+SR+FirstNone1+FirstNone2-3) + Up3
+	    if FirstNone1 == 1 and FirstNone2 == 1:
+		Value += 5
 
     FirstNone1 = 1
     for p in range(1, min(6, j+1)):
@@ -538,7 +620,7 @@ def Evalp(i, j, Self):
 		SU = p
 		break
     FirstNone2 = 1
-    for q in range(1, min(6, 17-i)):
+    for q in range(1, min(6, 17-j)):
         if Position[i][j+q] != Self and Position[i][j+q] != Self-2:
     	    if FirstNone2 == 1:
 	        if j+q == 16:
@@ -570,19 +652,21 @@ def Evalp(i, j, Self):
         if FirstNone1 == 0 and FirstNone2 == 0:
 	    if SU >= SD:
 		if j-SU >= 1:
-		    if Position[i-SU][j] == 0:
+		    if Position[i][j-SU] == 0:
 		        Up4 = Bonus(SU+D-2)
          	Value = Value+Price(SU+D-2)+Up3
 	    else:
-		if i+SD <= 15:
-		    if Position[i+SD][j] == 0:
-		        Up4 = Bonus(SD+L-2)
-	        Value = Value+Price(SD+L-2)+Up4
+		if j+SD <= 15:
+		    if Position[i][j+SD] == 0:
+		        Up4 = Bonus(SD+U-2)
+	        Value = Value+Price(SD+U-2)+Up4
         else:
-            if i-SU >= 1 and i+SD <= 15:
-	        if Position[i-SU][j] == 0 and Position[i+SD][j] == 0:
+            if j-SU >= 1 and j+SD <= 15:
+	        if Position[i][j-SU] == 0 and Position[i][j+SD] == 0:
 	            Up4 = Bonus(SU+SD+FirstNone1+FirstNone2-3)
             Value = Value + Price(SU+SD+FirstNone1+FirstNone2-3) + Up4
+	    if FirstNone1 == 1 and FirstNone2 == 1:
+		Value += 5
     if UL+LR >= 6 or LL+UR >= 6 or U+D >= 6 or L+R >= 6:
         End = 1
 
@@ -771,8 +855,10 @@ def Eval():
         for j in range(Upm, Lom+1):
             if Position[i][j] == Self:
             # Evaluate the value of our attack
-
+		CountAgain = 0
                 for p in range(1, min(6, i+1, j+1)):
+		    if Position[i-p][j-p] == Self:
+			CountAgain = 1
                     if Position[i-p][j-p] != Self and Position[i-p][j-p] != Self-2:
 #                        if Position[i-p][j-p] == 0 and BUL == 0:
 #			    BUL = -1
@@ -786,12 +872,14 @@ def Eval():
 #			    continue                        
 			LR = q
                         break
-		if i-UL >= 1 and j-UL >= 1 and i+LR <=15 and j+LR <= 15:
-		    if Position[i-UL][j-UL] == 0 and Position[i+LR][j+LR] == 0:
-		        Up1 = Bonus(UL+LR-1)
-                Value = Value + Price(UL+LR-1+BUL+BLR) + Up1
+		if CountAgain != 1:
+		    if i-UL >= 1 and j-UL >= 1 and i+LR <=15 and j+LR <= 15:
+		        if Position[i-UL][j-UL] == 0 and Position[i+LR][j+LR] == 0:
+		            Up1 = Bonus(UL+LR-1)
+                    Value = Value + Price(UL+LR-1+BUL+BLR) + Up1
                 
-                for p in range(1, min(6, i+1, 17-j)):
+                CountAgain = 0
+		for p in range(1, min(6, i+1, 17-j)):
                     if Position[i-p][j+p] != Self and Position[i-p][j+p] != Self-2:
 #                        if Position[i-p][j-p] == 0 and BLL == 0:
 #			    BLL = -1
@@ -799,18 +887,24 @@ def Eval():
                         LL = p
                         break
                 for q in range(1, min(6, 17-i, j+1)):
+		    if Position[i+q][j-q] == Self:
+			CountAgain = 1
                     if Position[i+q][j-q] != Self and Position[i+q][j-q] != Self-2:
  #                       if Position[i-q][j-q] == 0 and BUR == 0:
 #			    BUR = -1
 #			    continue
                         UR = q
                         break
-		if i-LL >= 1 and j+UL <= 15 and i+UR <=15 and j-UR >= 1:
-		    if Position[i-LL][j+LL] == 0 and Position[i+UR][j-UR] == 0:
-		        Up2 = Bonus(LL+UR-1)
-                Value = Value + Price(LL+UR-1+BUR+BLL) + Up2
+		if CountAgain != 1:
+		    if i-LL >= 1 and j+LL <= 15 and i+UR <=15 and j-UR >= 1:
+		        if Position[i-LL][j+LL] == 0 and Position[i+UR][j-UR] == 0:
+		            Up2 = Bonus(LL+UR-1)
+                    Value = Value + Price(LL+UR-1+BUR+BLL) + Up2
                 
-                for p in range(1, min(6, i+1)):
+                CountAgain = 0
+		for p in range(1, min(6, i+1)):
+		    if Position[i-p][j] == Self:
+			CountAgain = 1
                     if Position[i-p][j] != Self and Position[i-p][j] != Self-2:
 #                        if Position[i-p][j-p] == 0 and BL == 0:
 #			    BL = -1
@@ -824,12 +918,14 @@ def Eval():
 #			    continue
                         R = q
                         break
-		if i-L >= 1 and i+R <=15:
-		    if Position[i-L][j] == 0 and Position[i+R][j] == 0:
-		        Up3 = Bonus(L+R-1)
-                Value = Value + Price(L+R-1+BL+BR) + Up3
+		if CountAgain != 1:
+		    if i-L >= 1 and i+R <=15:
+		        if Position[i-L][j] == 0 and Position[i+R][j] == 0:
+		            Up3 = Bonus(L+R-1)
+                    Value = Value + Price(L+R-1+BL+BR) + Up3
                 
-                for p in range(1, min(6, 17-j)):
+                CountAgain = 0
+		for p in range(1, min(6, 17-j)):
                     if Position[i][j+p] != Self and Position[i][j+p] != Self-2:
 #                        if Position[i-p][j-p] == 0 and BU == 0:
 #			    BU = -1
@@ -837,16 +933,19 @@ def Eval():
                         U = p
                         break
                 for q in range(1, min(6, j-1)):
-                    if Position[i][j-q] != Self and Position[i][j-q] != Self-2:
+                    if Position[i][j-q] == Self:
+			CountAgain = 1
+		    if Position[i][j-q] != Self and Position[i][j-q] != Self-2:
 #                        if Position[i-q][j-q] == 0 and BD == 0:
 #			    BD = -1
 #			    continue
                         D = q
                         break
-		if j+U <= 15 and j-D >= 1:
-		    if Position[i][j+U] == 0 and Position[i][j-D] == 0:
-		        Up4 = Bonus(U+D-1)
-                Value = Value + Price(U+D-1+BU+BD) + Up4
+		if CountAgain != 1:
+		    if j+U <= 15 and j-D >= 1:
+		        if Position[i][j+U] == 0 and Position[i][j-D] == 0:
+		            Up4 = Bonus(U+D-1)
+                    Value = Value + Price(U+D-1+BU+BD) + Up4
 		
 		# Evaluate the value of our defense
                 UR, UL, LL, LR, L, R, U, D, Up1, Up2, Up3, Up4, BUR, BUL, BLL, BLR, BL, BR, BU, BD = 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
@@ -933,7 +1032,11 @@ def Eval():
             if Position[i][j] == Opponent:
 		#Evaluate the value of opponent's attack
                 UR, UL, LL, LR, L, R, U, D, Up1, Up2, Up3, Up4, BUR, BUL, BLL, BLR, BL, BR, BU, BD = 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		
+		CountAgain = 0
                 for p in range(1, min(6, i+1, j+1)):
+		    if Position[i-p][j-p] == Opponent:
+			CountAgain = 1
                     if Position[i-p][j-p] != Opponent and Position[i-p][j-p] != Opponent-2:
 #                        if Position[i-p][j-p] == 0 and BUL == 0:
 #			    BUL = -1
@@ -947,11 +1050,13 @@ def Eval():
 #			    continue
                         LR = q
                         break
-		if i-UL >= 1 and j-UL >= 1 and i+LR <=15 and j+LR <= 15:
-		    if Position[i-UL][j-UL] == 0 and Position[i+LR][j+LR] == 0:
-		        Up1 = Bonus(UL+LR-1)
-                Value = Value - Price(UL+LR-1+BUL+BLR) - Up1
+		if CountAgain != 1:
+		    if i-UL >= 1 and j-UL >= 1 and i+LR <=15 and j+LR <= 15:
+		        if Position[i-UL][j-UL] == 0 and Position[i+LR][j+LR] == 0:
+		            Up1 = Bonus(UL+LR-1)
+                    Value = Value - Price(UL+LR-1+BUL+BLR) - Up1
                 
+		CountAgain = 0
                 for p in range(1, min(6, i+1, 17-j)):
                     if Position[i-p][j+p] != Opponent and Position[i-p][j+p] != Opponent-2:
 #                        if Position[i-p][j-p] == 0 and BLL == 0:
@@ -960,18 +1065,24 @@ def Eval():
                         LL = p
                         break
                 for q in range(1, min(6, 17-i, j+1)):
+		    if Position[i+q][j-q] == Opponent:
+			CountAgain = 1
                     if Position[i+q][j-q] != Opponent and Position[i+q][j-q] != Opponent-2:
 #                        if Position[i-q][j-q] == 0 and BUR == 0:
 #			    BUR = -1
 #			    continue
                         UR = q
                         break
-		if i-LL >= 1 and j+UL <= 15 and i+UR <=15 and j-UR >= 1:
-		    if Position[i-LL][j+LL] == 0 and Position[i+UR][j-UR] == 0:
-		        Up2 = Bonus(LL+UR-1)
-                Value = Value - Price(LL+UR-1+BLL+BUR) - Up2
+		if CountAgain != 1:
+		    if i-LL >= 1 and j+UL <= 15 and i+UR <=15 and j-UR >= 1:
+		        if Position[i-LL][j+LL] == 0 and Position[i+UR][j-UR] == 0:
+		            Up2 = Bonus(LL+UR-1)
+                    Value = Value - Price(LL+UR-1+BLL+BUR) - Up2
                 
+		CountAgain = 0
                 for p in range(1, min(6, i+1)):
+		    if Position[i-p][j] == Opponent:
+			CountAgain = 1
                     if Position[i-p][j] != Opponent and Position[i-p][j] != Opponent-2:
 #                        if Position[i-p][j-p] == 0 and BL == 0:
 #			    BL = -1
@@ -985,11 +1096,13 @@ def Eval():
 #			    continue
                         R = q
                         break
-		if i-L >= 1 and i+R <=15:
-		    if Position[i-L][j] == 0 and Position[i+R][j] == 0:
-		        Up3 = Bonus(L+R-1)
-                Value = Value - Price(L+R-1+BL+BR) - Up3
+		if CountAgain != 1:
+		    if i-L >= 1 and i+R <=15:
+		        if Position[i-L][j] == 0 and Position[i+R][j] == 0:
+		            Up3 = Bonus(L+R-1)
+                    Value = Value - Price(L+R-1+BL+BR) - Up3
                 
+		CountAgain = 0
                 for p in range(1, min(6, 17-j)):
                     if Position[i][j+p] != Opponent and Position[i][j+p] != Opponent-2:
 #                        if Position[i-p][j-p] == 0 and BU == 0:
@@ -998,16 +1111,19 @@ def Eval():
                         U = p
                         break
                 for q in range(1, min(6, j+1)):
+		    if Position[i][j-q] == Opponent:
+			CountAgain = 1
                     if Position[i][j-q] != Opponent and Position[i][j-q] != Opponent-2:
 #                        if Position[i-q][j-q] == 0 and BD == 0:
 #			    BD = -1
 #			    continue
                         D = q
                         break
-		if j+U <= 15 and j-D >= 1:
-		    if Position[i][j+U] == 0 and Position[i][j-D] == 0:
-		        Up4 = Bonus(U+D-1)
-                Value = Value - Price(U+D-1+BU+BD) -Up4
+		if CountAgain != 1:
+		    if j+U <= 15 and j-D >= 1:
+		        if Position[i][j+U] == 0 and Position[i][j-D] == 0:
+		            Up4 = Bonus(U+D-1)
+                    Value = Value - Price(U+D-1+BU+BD) -Up4
                 
 		# Evaluate the value of our opponent's defense
                 UR, UL, LL, LR, L, R, U, D, Up1, Up2, Up3, Up4, BUR, BUL, BLL, BLR, BL, BR, BU, BD = 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
@@ -1090,8 +1206,8 @@ def Eval():
     
     
 
-Depth, MaxDepth, FirstVisit, FirstAnalyze, BlackFirstMove = 0, 8, 1, 4, 1
-AnalyzeNumber = 4
+Depth, MaxDepth, FirstVisit, BlackFirstMove, FirstAnalyze = 0, 8, 1, 1, 15
+AnalyzeNumber = 3
 Position = [[0] * 17 for i in range(17)]
 Upm, Lom, Lem, Rim = 17, -2, 17, -2
 while (1):

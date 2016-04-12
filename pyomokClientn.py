@@ -271,7 +271,7 @@ def SelfBest(Alpha, Beta):
 	LoseDepth = max(LoseDepth,CLoseDepth) 
     	Upm, Lom, Lem, Rim = RemUpm, RemLom, RemLem, RemRim
     	Position[BestPoints[i][0]][BestPoints[i][1]] = 0
-    	if v >= Beta:
+    	if v > Beta:
 	    if AcAnalyzeNumber == 1:
 		AcMaxDepth -= 1
             Depth -= 1
@@ -347,7 +347,7 @@ def OpponentBest(Alpha, Beta):
 	LoseDepth = min(LoseDepth, CLoseDepth)
     	Upm, Lom, Lem, Rim = RemUpm, RemLom, RemLem, RemRim
     	Position[BestPoints[i][0]][BestPoints[i][1]] = 0
-    	if v <= Alpha:
+    	if v < Alpha:
 	    if AcAnalyzeNumber == 1:
 		AcMaxDepth -= 1
   	    Depth -= 1

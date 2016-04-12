@@ -11,4 +11,5 @@ Further possible improvement
 6. Add a pruning mechanics to the win depth and lose depth iteration.
 
 Bug
+
 1. There was a case that I got a 29000 with win depth 30.
